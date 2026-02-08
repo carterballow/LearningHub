@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import {
   Mail,
@@ -21,6 +22,9 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Separator } from "@/components/ui/separator"
 import { Progress } from "@/components/ui/progress"
 
+const API_BASE = "http://localhost:4000"
+
+// ---------------- HARD CODED ACADEMIC INFO (unchanged) ----------------
 const academicInfo = {
   gpa: "3.72",
   credits: 68,
@@ -39,16 +43,107 @@ const achievements = [
   { title: "Study Streak", description: "15 day streak", type: "study" },
 ]
 
-const enrolledCourses = [
-  { code: "CS 101", name: "Intro to Computer Science", grade: "A", initials: "CS", color: "bg-primary" },
-  { code: "MATH 201", name: "Linear Algebra", grade: "B+", initials: "MA", color: "bg-chart-3" },
-  { code: "CHEM 202", name: "Organic Chemistry", grade: "B", initials: "CH", color: "bg-destructive" },
-  { code: "ENG 301", name: "English Composition", grade: "A-", initials: "EN", color: "bg-accent" },
-  { code: "CS 210", name: "Data Structures", grade: "A", initials: "DS", color: "bg-primary" },
-  { code: "HIST 150", name: "World History", grade: "A-", initials: "HI", color: "bg-chart-3" },
-]
+// ---------------- TYPES ----------------
+type User = {
+  name: string
+  email: string
+}
+
+type Course = {
+  _id: string
+  title: string
+  code: string
+  color?: string
+}
+
+// helper to generate initials from course code
+function getInitials(code: string) {
+  return code
+    .split(" ")
+    .map((c) => c[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase()
+}
 
 export function ProfileContent() {
+  const [user, setUser] = useState<User | null>(null)
+  const [courses, setCourses] = useState<Course[]>([])
+
+  // ---------------- FETCH USER ----------------
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/auth/me`, {
+          credentials: "include",
+        })
+        if (!res.ok) return
+
+        const data = await res.json()
+
+        // 🔥 HANDLE BOTH SHAPES
+        if (data.name && data.email) {
+          setUser(data)
+        } else if (data.user) {
+          setUser(data.user)
+        } else {
+          console.error("Unexpected user response:", data)
+        }
+      } catch (err) {
+        console.error("User fetch failed", err)
+      }
+    }
+
+    fetchUser()
+  }, [])
+
+  // ---------------- FETCH COURSES ----------------
+  useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/courses`, {
+          credentials: "include",
+        })
+        if (!res.ok) return
+
+        const data = await res.json()
+
+        // 🔥 HANDLE BOTH POSSIBLE SHAPES
+        if (Array.isArray(data)) {
+          setCourses(data)
+        } else if (Array.isArray(data.courses)) {
+          setCourses(data.courses)
+        } else {
+          console.error("Unexpected courses response:", data)
+          setCourses([])
+        }
+      } catch (err) {
+        console.error("Courses fetch failed", err)
+      }
+    }
+
+    fetchCourses()
+  }, [])
+
+
+  // logout (optional backend endpoint later)
+  const handleLogout = async () => {
+    await fetch(`${API_BASE}/api/auth/logout`, {
+      method: "POST",
+      credentials: "include",
+    })
+    window.location.href = "/login"
+  }
+
+  const initials = user?.name
+    ? user.name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase()
+    : "U"
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
@@ -58,7 +153,7 @@ export function ProfileContent() {
             <Edit3 className="mr-2 h-4 w-4" />
             Edit Profile
           </Button>
-          <Button variant="destructive" size="sm">
+          <Button variant="destructive" size="sm" onClick={handleLogout}>
             <LogOut className="mr-2 h-4 w-4" />
             Log Out
           </Button>
@@ -66,30 +161,31 @@ export function ProfileContent() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
-        {/* Profile Card */}
+        {/* PROFILE CARD */}
         <Card className="border-none shadow-sm">
           <CardContent className="pt-6">
             <div className="flex flex-col items-center text-center">
               <Avatar className="h-20 w-20 mb-4">
                 <AvatarFallback className="bg-primary text-primary-foreground text-2xl font-bold">
-                  AJ
+                  {initials}
                 </AvatarFallback>
               </Avatar>
-              <h3 className="text-lg font-bold text-foreground">Alex Johnson</h3>
-              <p className="text-sm text-muted-foreground">Student ID: STU-2023-4521</p>
+
+              {/* 🔥 REAL NAME */}
+              <h3 className="text-lg font-bold text-foreground">{user?.name ?? "Loading..."}</h3>
+
               <Badge className="mt-2 bg-primary text-primary-foreground">{academicInfo.year}</Badge>
 
               <Separator className="my-4 w-full" />
 
               <div className="flex w-full flex-col gap-3 text-left">
+                {/* 🔥 REAL EMAIL */}
                 <div className="flex items-center gap-3 text-sm">
                   <Mail className="h-4 w-4 text-muted-foreground shrink-0" />
-                  <span className="text-foreground">alex@university.edu</span>
+                  <span className="text-foreground">{user?.email ?? "Loading..."}</span>
                 </div>
-                <div className="flex items-center gap-3 text-sm">
-                  <Mail className="h-4 w-4 text-muted-foreground shrink-0" />
-                  <span className="text-foreground">alex.johnson@gmail.com</span>
-                </div>
+
+                {/* Rest stays fake */}
                 <div className="flex items-center gap-3 text-sm">
                   <Phone className="h-4 w-4 text-muted-foreground shrink-0" />
                   <span className="text-foreground">(555) 123-4567</span>
@@ -124,7 +220,7 @@ export function ProfileContent() {
           </CardContent>
         </Card>
 
-        {/* Academic Info + Achievements */}
+        {/* ACADEMIC INFO — UNCHANGED */}
         <Card className="border-none shadow-sm lg:col-span-2">
           <CardHeader>
             <CardTitle className="text-foreground">Academic Information</CardTitle>
@@ -136,7 +232,6 @@ export function ProfileContent() {
                 <div>
                   <p className="text-sm text-muted-foreground">Cumulative GPA</p>
                   <p className="text-3xl font-bold text-foreground mt-1">{academicInfo.gpa}</p>
-                  <p className="text-xs text-muted-foreground mt-1">out of 4.0</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Major</p>
@@ -145,10 +240,6 @@ export function ProfileContent() {
                 <div>
                   <p className="text-sm text-muted-foreground">Minor</p>
                   <p className="text-sm font-medium text-foreground mt-1">{academicInfo.minor}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Academic Advisor</p>
-                  <p className="text-sm font-medium text-foreground mt-1">{academicInfo.advisor}</p>
                 </div>
               </div>
 
@@ -160,35 +251,7 @@ export function ProfileContent() {
                       {academicInfo.credits}/{academicInfo.totalCredits}
                     </span>
                   </div>
-                  <Progress
-                    value={(academicInfo.credits / academicInfo.totalCredits) * 100}
-                    className="h-3"
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {academicInfo.totalCredits - academicInfo.credits} credits remaining
-                  </p>
-                </div>
-
-                <Separator />
-
-                <div>
-                  <p className="text-sm font-medium text-foreground mb-3">Achievements</p>
-                  <div className="flex flex-col gap-2">
-                    {achievements.map((achievement) => (
-                      <div
-                        key={achievement.title}
-                        className="flex items-center gap-3 rounded-lg bg-secondary/50 p-2.5"
-                      >
-                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-accent/10">
-                          <GraduationCap className="h-4 w-4 text-accent" />
-                        </div>
-                        <div>
-                          <p className="text-xs font-medium text-foreground">{achievement.title}</p>
-                          <p className="text-[11px] text-muted-foreground">{achievement.description}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                  <Progress value={(academicInfo.credits / academicInfo.totalCredits) * 100} />
                 </div>
               </div>
             </div>
@@ -196,71 +259,27 @@ export function ProfileContent() {
         </Card>
       </div>
 
-      {/* Enrolled Courses */}
+      {/* 🔥 REAL ENROLLED COURSES */}
       <Card className="border-none shadow-sm">
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-foreground">Enrolled Courses</CardTitle>
-              <CardDescription>Spring 2026 Semester</CardDescription>
-            </div>
-            <Link href="/courses" className="text-sm font-medium text-primary hover:underline">
-              View All
-            </Link>
-          </div>
+        <CardHeader>
+          <CardTitle className="text-foreground">Enrolled Courses</CardTitle>
+          <CardDescription>Your current courses</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {enrolledCourses.map((course) => (
+            {courses.map((course) => (
               <div
-                key={course.code}
+                key={course._id}
                 className="flex items-center gap-3 rounded-lg border bg-card p-3 transition-colors hover:bg-secondary/50"
               >
                 <Avatar className="h-9 w-9 shrink-0">
-                  <AvatarFallback className={`${course.color} text-card text-xs font-bold`}>
-                    {course.initials}
+                  <AvatarFallback className="bg-primary text-card text-xs font-bold">
+                    {getInitials(course.code)}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-foreground">{course.code}</p>
-                  <p className="text-xs text-muted-foreground truncate">{course.name}</p>
-                </div>
-                <Badge variant="secondary" className="text-xs shrink-0">{course.grade}</Badge>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Account Activity */}
-      <Card className="border-none shadow-sm">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-foreground">Recent Activity</CardTitle>
-          <CardDescription>Your recent account activity</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col gap-3">
-            {[
-              { action: "Submitted assignment", detail: "Linear Algebra Problem Set 5", time: "2 hours ago", icon: BookOpen },
-              { action: "Completed quiz", detail: "CS 101 - Weekly Quiz 5", time: "Yesterday", icon: GraduationCap },
-              { action: "Updated notes", detail: "Binary Search Trees - Implementation", time: "Yesterday", icon: Edit3 },
-              { action: "Uploaded file", detail: "CS101_Lecture_Notes_Week5.pdf", time: "2 days ago", icon: BookOpen },
-              { action: "Logged in from new device", detail: "Chrome on MacOS", time: "3 days ago", icon: Shield },
-            ].map((activity) => (
-              <div
-                key={`${activity.action}-${activity.time}`}
-                className="flex items-center gap-3 rounded-lg p-2 transition-colors hover:bg-secondary/50"
-              >
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-secondary">
-                  <activity.icon className="h-4 w-4 text-muted-foreground" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground">{activity.action}</p>
-                  <p className="text-xs text-muted-foreground truncate">{activity.detail}</p>
-                </div>
-                <div className="flex items-center gap-1 text-xs text-muted-foreground shrink-0">
-                  <Clock className="h-3 w-3" />
-                  <span>{activity.time}</span>
+                  <p className="text-xs text-muted-foreground truncate">{course.title}</p>
                 </div>
               </div>
             ))}

@@ -5,6 +5,7 @@ require("dotenv").config();
 
 const { connectDB } = require("./db");
 const authRoutes = require("./routes/auth");
+const dataRoutes = require("./routes/data");
 
 const app = express();
 
@@ -20,6 +21,8 @@ app.use(cors({
 app.get("/health", (req, res) => res.json({ ok: true }));
 
 app.use("/api/auth", authRoutes);
+app.use("/api", dataRoutes);
+
 
 const port = process.env.PORT || 4000;
 

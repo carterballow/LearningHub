@@ -1,5 +1,5 @@
 import { DashboardLayout } from "@/components/dashboard-layout"
-import { CourseDashboard } from "@/components/courses/course-dashboard"
+import { CourseDashboard } from "@/components/course-dashboard"
 
 export default function CoursesPage() {
   return (

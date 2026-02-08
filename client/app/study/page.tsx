@@ -1,5 +1,5 @@
 import { DashboardLayout } from "@/components/dashboard-layout"
-import { StudyContent } from "@/components/courses/study-content"
+import { StudyContent } from "@/components/study-content"
 
 export default function StudyPage() {
   return (

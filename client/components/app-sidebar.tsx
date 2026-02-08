@@ -10,7 +10,7 @@ import {
 } from "lucide-react"
 
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 
 import {
   Sidebar,
@@ -25,12 +25,29 @@ import {
 } from "@/components/ui/sidebar"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
+const API_BASE = "http://localhost:4000"
+
 export function AppSidebar() {
   const pathname = usePathname()
+  const router = useRouter()
+
+  const handleLogout = async () => {
+    try {
+      await fetch(`${API_BASE}/api/auth/logout`, {
+        method: "POST",
+        credentials: "include",
+      })
+    } catch (err) {
+      console.error("Logout failed", err)
+    } finally {
+      router.push("/login")
+    }
+  }
+
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader className="p-4">
-        <Link href="/" className="flex items-center gap-2">
+        <Link href="/home" className="flex items-center gap-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sidebar-primary">
             <GraduationCap className="h-5 w-5 text-sidebar-primary-foreground" />
           </div>
@@ -43,16 +60,11 @@ export function AppSidebar() {
       <SidebarSeparator />
 
       <SidebarContent>
-        {/* Home */}
         <SidebarGroup>
+          {/* Home */}
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton
-                asChild
-                isActive={pathname === "/home"}
-                tooltip="Home"
-                className="py-3 min-h-[44px]"
-              >
+              <SidebarMenuButton asChild isActive={pathname === "/home"} tooltip="Home" className="py-3 min-h-[44px]">
                 <Link href="/home" className="flex items-center gap-3">
                   <Home className="h-6 w-6" />
                   <span className="text-base font-semibold">Home</span>
@@ -64,32 +76,22 @@ export function AppSidebar() {
           {/* Profile */}
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton
-                asChild
-                isActive={pathname === "/profile"}
-                tooltip="Profile"
-                className="py-3 min-h-[44px]"
-              >
+              <SidebarMenuButton asChild isActive={pathname === "/profile"} tooltip="Profile" className="py-3 min-h-[44px]">
                 <Link href="/profile" className="flex items-center gap-3">
                   <User className="h-6 w-6"/>
-                  <span className="text-weight font-semibold">Profile</span>
+                  <span className="font-semibold">Profile</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
 
-          {/* Profile */}
+          {/* Courses */}
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton
-                asChild
-                isActive={pathname === "/courses"}
-                tooltip="Courses"
-                className="py-3 min-h-[44px]"
-              >
+              <SidebarMenuButton asChild isActive={pathname === "/courses"} tooltip="Courses" className="py-3 min-h-[44px]">
                 <Link href="/courses" className="flex items-center gap-3">
                   <LayoutDashboard className="h-6 w-6"/>
-                  <span className="text-weight font-semibold">Courses</span>
+                  <span className="font-semibold">Courses</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
@@ -98,22 +100,17 @@ export function AppSidebar() {
           {/* Calendar */}
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton
-                asChild
-                isActive={pathname === "/calendar"}
-                tooltip="Calendar"
-                className="py-3 min-h-[44px]"
-              >
+              <SidebarMenuButton asChild isActive={pathname === "/calendar"} tooltip="Calendar" className="py-3 min-h-[44px]">
                 <Link href="/calendar" className="flex items-center gap-3">
                   <Calendar className="h-6 w-6"/>
-                  <span className="text-weight font-semibold">Calendar</span>
+                  <span className="font-semibold">Calendar</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarGroup>
-
       </SidebarContent>
+
       <SidebarSeparator />
 
       <SidebarFooter>
@@ -132,8 +129,9 @@ export function AppSidebar() {
               </div>
             </SidebarMenuButton>
           </SidebarMenuItem>
+
           <SidebarMenuItem>
-            <SidebarMenuButton tooltip="Log out">
+            <SidebarMenuButton tooltip="Log out" onClick={handleLogout}>
               <LogOut />
               <span>Log out</span>
             </SidebarMenuButton>

@@ -1,128 +1,38 @@
 "use client"
 
+import { useEffect, useMemo, useState } from "react"
 import {
   BookOpen,
   FileText,
   HelpCircle,
   Clock,
   TrendingUp,
-  CheckCircle2,
   AlertCircle,
   Calendar,
+  CheckCircle2,
 } from "lucide-react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 
-const stats = [
-  {
-    title: "Active Courses",
-    value: "6",
-    description: "2 ending this month",
-    icon: BookOpen,
-    color: "text-primary",
-    bgColor: "bg-primary/10",
-  },
-  {
-    title: "Pending Assignments",
-    value: "4",
-    description: "2 due this week",
-    icon: FileText,
-    color: "text-accent",
-    bgColor: "bg-accent/10",
-  },
-  {
-    title: "Upcoming Quizzes",
-    value: "3",
-    description: "Next: Tomorrow",
-    icon: HelpCircle,
-    color: "text-destructive",
-    bgColor: "bg-destructive/10",
-  },
-  {
-    title: "Avg. Grade",
-    value: "A-",
-    description: "+2% from last term",
-    icon: TrendingUp,
-    color: "text-chart-3",
-    bgColor: "bg-chart-3/10",
-  },
-]
+type ApiCourse = {
+  _id: string
+  code: string
+  title: string
+  color?: string
+}
 
-const upcomingAssignments = [
-  {
-    title: "Linear Algebra Problem Set 5",
-    course: "MATH 201",
-    due: "Feb 8, 2026",
-    status: "urgent",
-    type: "Assignment",
-  },
-  {
-    title: "Research Paper Draft",
-    course: "ENG 301",
-    due: "Feb 10, 2026",
-    status: "upcoming",
-    type: "Assignment",
-  },
-  {
-    title: "Midterm Quiz - Organic Chemistry",
-    course: "CHEM 202",
-    due: "Feb 11, 2026",
-    status: "upcoming",
-    type: "Quiz",
-  },
-  {
-    title: "Data Structures Lab Report",
-    course: "CS 210",
-    due: "Feb 12, 2026",
-    status: "normal",
-    type: "Assignment",
-  },
-  {
-    title: "History Essay Outline",
-    course: "HIST 150",
-    due: "Feb 14, 2026",
-    status: "normal",
-    type: "Assignment",
-  },
-]
-
-const recentCourses = [
-  {
-    name: "Introduction to Computer Science",
-    code: "CS 101",
-    instructor: "Prof. Williams",
-    progress: 72,
-    initials: "CS",
-    color: "bg-primary",
-  },
-  {
-    name: "Linear Algebra",
-    code: "MATH 201",
-    instructor: "Dr. Chen",
-    progress: 65,
-    initials: "MA",
-    color: "bg-chart-3",
-  },
-  {
-    name: "Organic Chemistry",
-    code: "CHEM 202",
-    instructor: "Prof. Patel",
-    progress: 58,
-    initials: "CH",
-    color: "bg-destructive",
-  },
-  {
-    name: "English Composition",
-    code: "ENG 301",
-    instructor: "Dr. Smith",
-    progress: 80,
-    initials: "EN",
-    color: "bg-accent",
-  },
-]
+type ApiAssignment = {
+  id: string
+  status: "todo" | "in-progress" | "done"
+  course: { id: string; code: string; title: string; color?: string }
+  title: string
+  type: "homework" | "quiz" | "project" | "reading" | "exam"
+  dueDate: string
+}
 
 const announcements = [
   {
@@ -142,43 +52,164 @@ const announcements = [
   },
 ]
 
-function getStatusBadge(status: string) {
+function getStatusBadge(status: "urgent" | "upcoming" | "normal") {
   switch (status) {
     case "urgent":
-      return (
-        <Badge className="bg-destructive text-destructive-foreground text-[10px]">
-          Due Soon
-        </Badge>
-      )
+      return <Badge className="bg-destructive text-destructive-foreground text-[10px]">Due Soon</Badge>
     case "upcoming":
-      return (
-        <Badge className="bg-accent text-accent-foreground text-[10px]">
-          This Week
-        </Badge>
-      )
+      return <Badge className="bg-accent text-accent-foreground text-[10px]">This Week</Badge>
     default:
-      return (
-        <Badge variant="secondary" className="text-[10px]">
-          Upcoming
-        </Badge>
-      )
+      return <Badge variant="secondary" className="text-[10px]">Upcoming</Badge>
   }
 }
 
+function formatDue(dueDateISO: string) {
+  const d = new Date(dueDateISO)
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+}
+
 export function HomeContent() {
+  const router = useRouter()
+  const API = "http://localhost:4000"
+
+  const [userName, setUserName] = useState("")
+  const [courses, setCourses] = useState<ApiCourse[]>([])
+  const [assignments, setAssignments] = useState<ApiAssignment[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function load() {
+      try {
+        setLoading(true)
+        const opts: RequestInit = { credentials: "include", headers: { "Content-Type": "application/json" } }
+
+        const [meRes, coursesRes, assignmentsRes] = await Promise.all([
+          fetch(`${API}/api/auth/me`, opts),
+          fetch(`${API}/api/courses`, opts),
+          fetch(`${API}/api/assignments`, opts),
+        ])
+
+        if (meRes.status === 401) {
+          router.push("/login")
+          return
+        }
+
+        const meData = await meRes.json().catch(() => ({}))
+        const coursesData = await coursesRes.json().catch(() => ({}))
+        const assignmentsData = await assignmentsRes.json().catch(() => ({}))
+
+        if (cancelled) return
+
+        setUserName(meData?.user?.name || "")
+        setCourses(coursesData?.courses || [])
+        setAssignments(assignmentsData?.assignments || [])
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+
+    load()
+    return () => {
+      cancelled = true
+    }
+  }, [router])
+
+  // ✅ stats are hardcoded EXCEPT active courses shows real count (change back if you want)
+  const stats = useMemo(
+    () => [
+      {
+        title: "Active Courses",
+        value: String(courses.length || 0),
+        description: "2 ending this month",
+        icon: BookOpen,
+        color: "text-primary",
+        bgColor: "bg-primary/10",
+      },
+      {
+        title: "Pending Assignments",
+        value: "4",
+        description: "2 due this week",
+        icon: FileText,
+        color: "text-accent",
+        bgColor: "bg-accent/10",
+      },
+      {
+        title: "Upcoming Quizzes",
+        value: "3",
+        description: "Next: Tomorrow",
+        icon: HelpCircle,
+        color: "text-destructive",
+        bgColor: "bg-destructive/10",
+      },
+      {
+        title: "Avg. Grade",
+        value: "A-",
+        description: "+2% from last term",
+        icon: TrendingUp,
+        color: "text-chart-3",
+        bgColor: "bg-chart-3/10",
+      },
+    ],
+    [courses.length]
+  )
+
+  // ✅ upcoming assignments from DB
+  const upcomingAssignments = useMemo(() => {
+    const now = new Date()
+
+    return assignments
+      .filter((a) => a.status !== "done")
+      .slice()
+      .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
+      .slice(0, 5)
+      .map((a) => {
+        const due = new Date(a.dueDate)
+        const diffDays = Math.ceil((due.getTime() - now.getTime()) / (24 * 60 * 60 * 1000))
+        const status: "urgent" | "upcoming" | "normal" =
+          diffDays <= 2 ? "urgent" : diffDays <= 7 ? "upcoming" : "normal"
+
+        return {
+          title: a.title,
+          course: a.course.code,
+          due: formatDue(a.dueDate),
+          status,
+          type: a.type === "quiz" || a.type === "exam" ? "Quiz" : "Assignment",
+        }
+      })
+  }, [assignments])
+
+  // ✅ course progress uses DB course names/codes, but keeps your fake progress %s/colors
+  const recentCourses = useMemo(() => {
+    const fallback = [
+      { progress: 72, color: "bg-primary" },
+      { progress: 65, color: "bg-chart-3" },
+      { progress: 58, color: "bg-destructive" },
+      { progress: 80, color: "bg-accent" },
+    ]
+
+    return courses.slice(0, 4).map((c, i) => {
+      const initials = (c.code || c.title || "C").slice(0, 2).toUpperCase()
+      return {
+        name: c.title,
+        code: c.code,
+        progress: fallback[i]?.progress ?? 50,
+        initials,
+        color: fallback[i]?.color ?? "bg-primary",
+      }
+    })
+  }, [courses])
+
   return (
     <div className="flex flex-col gap-6">
-      {/* Greeting */}
       <div>
         <h2 className="text-2xl font-bold text-foreground text-balance">
-          Welcome back, Alex
+          {loading ? "Welcome back" : `Welcome back${userName ? `, ${userName}` : ""}`}
         </h2>
-        <p className="text-muted-foreground mt-1">
-          {"Here's what's happening with your courses today."}
-        </p>
+        <p className="text-muted-foreground mt-1">{"Here's what's happening with your courses today."}</p>
       </div>
 
-      {/* Stats Cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat) => (
           <Card key={stat.title} className="border-none shadow-sm">
@@ -198,9 +229,7 @@ export function HomeContent() {
         ))}
       </div>
 
-      {/* Main Content Grid */}
       <div className="grid gap-6 lg:grid-cols-5">
-        {/* Upcoming Assignments */}
         <Card className="border-none shadow-sm lg:col-span-3">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
@@ -208,89 +237,90 @@ export function HomeContent() {
                 <CardTitle className="text-foreground">Upcoming Assignments</CardTitle>
                 <CardDescription>Your next deadlines at a glance</CardDescription>
               </div>
-              <Link
-                href="/calendar"
-                className="text-sm font-medium text-primary hover:underline"
-              >
+              <Link href="/calendar" className="text-sm font-medium text-primary hover:underline">
                 View Calendar
               </Link>
             </div>
           </CardHeader>
-          <CardContent>
-            <div className="flex flex-col gap-3">
-              {upcomingAssignments.map((assignment) => (
-                <div
-                  key={assignment.title}
-                  className="flex items-center gap-4 rounded-lg border border-border bg-card p-3 transition-colors hover:bg-secondary/50"
-                >
-                  <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${assignment.type === "Quiz" ? "bg-destructive/10" : "bg-primary/10"}`}>
-                    {assignment.type === "Quiz" ? (
-                      <HelpCircle className="h-5 w-5 text-destructive" />
-                    ) : (
-                      <FileText className="h-5 w-5 text-primary" />
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground truncate">
-                      {assignment.title}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {assignment.course}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-3 shrink-0">
-                    {getStatusBadge(assignment.status)}
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                      <Clock className="h-3 w-3" />
-                      <span>{assignment.due}</span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
 
-        {/* Right Column */}
-        <div className="flex flex-col gap-6 lg:col-span-2">
-          {/* Course Progress */}
-          <Card className="border-none shadow-sm">
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-foreground">Course Progress</CardTitle>
-                <Link
-                  href="/courses"
-                  className="text-sm font-medium text-primary hover:underline"
-                >
-                  All Courses
-                </Link>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-col gap-4">
-                {recentCourses.map((course) => (
-                  <div key={course.code} className="flex items-center gap-3">
-                    <Avatar className="h-9 w-9 shrink-0">
-                      <AvatarFallback className={`${course.color} text-card text-xs font-bold`}>
-                        {course.initials}
-                      </AvatarFallback>
-                    </Avatar>
+          <CardContent>
+            {loading ? (
+              <p className="text-sm text-muted-foreground">Loading…</p>
+            ) : upcomingAssignments.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No upcoming assignments.</p>
+            ) : (
+              <div className="flex flex-col gap-3">
+                {upcomingAssignments.map((a) => (
+                  <div
+                    key={`${a.course}-${a.title}-${a.due}`}
+                    className="flex items-center gap-4 rounded-lg border border-border bg-card p-3 transition-colors hover:bg-secondary/50"
+                  >
+                    <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${a.type === "Quiz" ? "bg-destructive/10" : "bg-primary/10"}`}>
+                      {a.type === "Quiz" ? (
+                        <HelpCircle className="h-5 w-5 text-destructive" />
+                      ) : (
+                        <FileText className="h-5 w-5 text-primary" />
+                      )}
+                    </div>
+
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between">
-                        <p className="text-sm font-medium text-foreground truncate">
-                          {course.code}
-                        </p>
-                        <span className="text-xs text-muted-foreground">{course.progress}%</span>
+                      <p className="text-sm font-medium text-foreground truncate">{a.title}</p>
+                      <p className="text-xs text-muted-foreground">{a.course}</p>
+                    </div>
+
+                    <div className="flex items-center gap-3 shrink-0">
+                      {getStatusBadge(a.status)}
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <Clock className="h-3 w-3" />
+                        <span>{a.due}</span>
                       </div>
-                      <Progress value={course.progress} className="mt-1.5 h-1.5" />
                     </div>
                   </div>
                 ))}
               </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <div className="flex flex-col gap-6 lg:col-span-2">
+          <Card className="border-none shadow-sm">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-foreground">Course Progress</CardTitle>
+                <Link href="/courses" className="text-sm font-medium text-primary hover:underline">
+                  All Courses
+                </Link>
+              </div>
+            </CardHeader>
+
+            <CardContent>
+              {loading ? (
+                <p className="text-sm text-muted-foreground">Loading…</p>
+              ) : recentCourses.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No courses yet.</p>
+              ) : (
+                <div className="flex flex-col gap-4">
+                  {recentCourses.map((course) => (
+                    <div key={course.code} className="flex items-center gap-3">
+                      <Avatar className="h-9 w-9 shrink-0">
+                        <AvatarFallback className={`${course.color} text-card text-xs font-bold`}>
+                          {course.initials}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm font-medium text-foreground truncate">{course.code}</p>
+                          <span className="text-xs text-muted-foreground">{course.progress}%</span>
+                        </div>
+                        <Progress value={course.progress} className="mt-1.5 h-1.5" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
 
-          {/* Announcements */}
           <Card className="border-none shadow-sm">
             <CardHeader className="pb-3">
               <CardTitle className="text-foreground">Announcements</CardTitle>
@@ -303,15 +333,9 @@ export function HomeContent() {
                       <AlertCircle className="h-4 w-4 text-primary" />
                     </div>
                     <div className="min-w-0">
-                      <p className="text-sm font-medium text-foreground">
-                        {announcement.title}
-                      </p>
-                      <p className="mt-0.5 text-xs text-muted-foreground line-clamp-2">
-                        {announcement.description}
-                      </p>
-                      <p className="mt-1 text-[11px] text-muted-foreground/60">
-                        {announcement.time}
-                      </p>
+                      <p className="text-sm font-medium text-foreground">{announcement.title}</p>
+                      <p className="mt-0.5 text-xs text-muted-foreground line-clamp-2">{announcement.description}</p>
+                      <p className="mt-1 text-[11px] text-muted-foreground/60">{announcement.time}</p>
                     </div>
                   </div>
                 ))}
@@ -321,7 +345,7 @@ export function HomeContent() {
         </div>
       </div>
 
-      {/* Today's Schedule */}
+      {/* keep your hardcoded schedule card below if you want */}
       <Card className="border-none shadow-sm">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
@@ -329,14 +353,12 @@ export function HomeContent() {
               <CardTitle className="text-foreground">{"Today's Schedule"}</CardTitle>
               <CardDescription>Saturday, February 7, 2026</CardDescription>
             </div>
-            <Link
-              href="/calendar"
-              className="text-sm font-medium text-primary hover:underline"
-            >
+            <Link href="/calendar" className="text-sm font-medium text-primary hover:underline">
               Full Calendar
             </Link>
           </div>
         </CardHeader>
+
         <CardContent>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {[
