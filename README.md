@@ -20,7 +20,5 @@ Full-stack EdTech dashboard with Next.js (App Router) + Express + MongoDB Atlas 
 - cookie-parser enabled
 - CORS configured for cookies
 
----
 
-## Project Structure (high level)
 
