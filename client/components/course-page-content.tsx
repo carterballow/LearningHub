@@ -34,7 +34,7 @@ import { Separator } from "@/components/ui/separator"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
-const API = "http://localhost:4000"
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

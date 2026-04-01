@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 
-const API = "http://localhost:4000"
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"
 
 type Course = { _id: string; code: string; title: string }
 type Flashcard = { front: string; back: string }

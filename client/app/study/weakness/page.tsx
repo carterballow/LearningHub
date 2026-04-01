@@ -8,7 +8,7 @@ import { DashboardLayout } from "@/components/dashboard-layout"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 
-const API = "http://localhost:4000"
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"
 
 type TypeStat = {
   type: string

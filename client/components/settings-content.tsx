@@ -24,7 +24,7 @@ import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
 
-const API_BASE = "http://localhost:4000"
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"
 
 const THEME_COLORS = [
   { id: "teal",   label: "Teal",   cls: "bg-[hsl(173,58%,39%)]" },

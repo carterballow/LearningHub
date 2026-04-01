@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 
-const API_BASE = "http://localhost:4000"
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"
 
 type Course = {
   _id: string

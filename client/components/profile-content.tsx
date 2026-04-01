@@ -19,7 +19,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Separator } from "@/components/ui/separator"
 
-const API_BASE = "http://localhost:4000"
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"
 
 type User = {
   name: string

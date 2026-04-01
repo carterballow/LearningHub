@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 
-const API_BASE = "http://localhost:4000"
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"
 
 type SearchResult = {
   courses: { id: string; code: string; title: string; instructor: string }[]

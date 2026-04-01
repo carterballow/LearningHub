@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 
-const API = "http://localhost:4000"
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"
 const months = ["January","February","March","April","May","June","July","August","September","October","November","December"]
 const daysOfWeek = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"]
 

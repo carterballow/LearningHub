@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 
-const API = "http://localhost:4000"
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"
 
 type Exam = {
   title: string

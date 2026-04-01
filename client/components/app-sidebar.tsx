@@ -6,7 +6,6 @@ import {
   User,
   LogOut,
   LayoutDashboard,
-  GraduationCap,
 } from "lucide-react"
 
 import Link from "next/link"
@@ -27,7 +26,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 
-const API_BASE = "http://localhost:4000"
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"
 
 export function AppSidebar() {
   const pathname = usePathname()
@@ -78,9 +77,7 @@ export function AppSidebar() {
     <Sidebar collapsible="icon">
       <SidebarHeader className="p-4">
         <Link href="/home" className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sidebar-primary">
-            <GraduationCap className="h-5 w-5 text-sidebar-primary-foreground" />
-          </div>
+          <img src="/LearningHub.png" alt="LearningHub" className="h-8 w-8 rounded-md object-cover shrink-0" />
           <span className="text-sm font-extrabold tracking-widest uppercase text-sidebar-primary-foreground [font-family:var(--font-display)] group-data-[collapsible=icon]:hidden">
             LearningHub
           </span>
