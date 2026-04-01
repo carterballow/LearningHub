@@ -80,7 +80,7 @@ function AiTutorContent() {
         setMessages([...newHistory, { role: "assistant", content: data.reply }])
       }
     } catch {
-      setMessages([...newHistory, { role: "assistant", content: "Sorry, I couldn't reach the server. Make sure the backend is running." }])
+      setMessages([...newHistory, { role: "assistant", content: "Sorry, I couldn't reach the server. Something went wrong. Please try again." }])
     } finally {
       setLoading(false)
     }

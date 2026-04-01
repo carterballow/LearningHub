@@ -48,7 +48,7 @@ export function RegisterForm() {
 
       router.push("/login")
     } catch (err) {
-      setError("Can't reach the server. Make sure the backend is running on port 4000.")
+      setError("Can't reach the server. Something went wrong. Please try again.")
     } finally {
       setLoading(false)
     }

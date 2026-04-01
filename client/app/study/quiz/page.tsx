@@ -78,7 +78,7 @@ function QuizContent() {
       setScore(0)
       setPhase("quiz")
     } catch {
-      setError("Can't reach the server. Make sure the backend is running.")
+      setError("Can't reach the server. Something went wrong. Please try again.")
       setPhase("setup")
     }
   }
