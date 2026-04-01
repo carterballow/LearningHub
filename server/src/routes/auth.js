@@ -20,12 +20,13 @@ function signToken(userId, jwtSecret) {
 }
 
 function setAuthCookie(res, token) {
+  const isProd = process.env.NODE_ENV === "production";
   res.cookie("token", token, {
     httpOnly: true,
-    sameSite: "lax",
-    secure: false, // localhost
+    sameSite: isProd ? "none" : "lax",
+    secure: isProd,
     maxAge: 7 * 24 * 60 * 60 * 1000,
-    path: "/", // good practice
+    path: "/",
   });
 }
 
@@ -168,10 +169,11 @@ router.post("/change-password", async (req, res) => {
 
 // POST /api/auth/logout
 router.post("/logout", (req, res) => {
+  const isProd = process.env.NODE_ENV === "production";
   res.clearCookie("token", {
     httpOnly: true,
-    sameSite: "lax",
-    secure: false, // true in production with HTTPS
+    sameSite: isProd ? "none" : "lax",
+    secure: isProd,
   });
   res.json({ message: "Logged out" });
 });
