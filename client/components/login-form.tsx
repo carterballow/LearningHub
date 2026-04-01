@@ -11,6 +11,8 @@ import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"
+
 export function LoginForm() {
   const router = useRouter()
 
@@ -26,7 +28,7 @@ export function LoginForm() {
 
     try {
       // If Express is on 4000:
-      const res = await fetch("http://localhost:4000/api/auth/login", {
+      const res = await fetch(`${API}/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

@@ -411,7 +411,7 @@ function OverviewTab({ course, role, onSyllabusUpdate }: {
     setUploading(false)
     if (res.ok) {
       const data = await res.json()
-      onSyllabusUpdate(`http://localhost:4000${data.url}`)
+      onSyllabusUpdate(`${API}${data.url}`)
     } else {
       const err = await res.json().catch(() => ({}))
       setUploadError(err?.error || "Upload failed.")

@@ -11,6 +11,8 @@ import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"
+
 export function RegisterForm() {
   const router = useRouter()
 
@@ -32,7 +34,7 @@ export function RegisterForm() {
 
     setLoading(true)
     try {
-      const res = await fetch("http://localhost:4000/api/auth/register", {
+      const res = await fetch(`${API}/api/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
