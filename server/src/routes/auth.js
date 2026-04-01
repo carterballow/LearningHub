@@ -4,7 +4,7 @@ const bcrypt = require("bcrypt");
 const User = require("../models/Users");
 
 // ✅ add this
-const { seedDefaultsAndAssignToUser } = require("../seed/seedForNewUsers");
+const { enrollUserInDefaultCourses } = require("../seed/seedForNewUsers");
 
 const router = express.Router();
 
@@ -50,8 +50,17 @@ router.post("/register", async (req, res) => {
 
     const emailLower = email.toLowerCase();
 
-    const isUCLA = emailLower.endsWith("@ucla.edu") || emailLower.endsWith("@g.ucla.edu");
-    if (!isUCLA) return res.status(400).json({ message: "Must use a UCLA email address" });
+    // Block consumer email providers — any school/university email is welcome
+    const blockedDomains = [
+      "gmail.com","googlemail.com","yahoo.com","yahoo.co.uk","yahoo.co.in",
+      "hotmail.com","hotmail.co.uk","outlook.com","live.com","live.co.uk","msn.com",
+      "icloud.com","me.com","mac.com","aol.com","protonmail.com","pm.me",
+      "zoho.com","ymail.com","rocketmail.com","inbox.com","mail.com","tutanota.com",
+    ];
+    const domain = emailLower.split("@")[1];
+    if (!domain || blockedDomains.includes(domain)) {
+      return res.status(400).json({ error: "Please use your school or university email (not Gmail, Yahoo, Outlook, etc.)" });
+    }
 
     const existing = await User.findOne({ email: emailLower });
     if (existing) return res.status(409).json({ error: "Email already in use" });
@@ -61,9 +70,8 @@ router.post("/register", async (req, res) => {
     // ✅ create the user
     const user = await User.create({ name, email: emailLower, passwordHash });
 
-    // ✅ seed defaults + assign 4 courses + 12-per-course templates + userAssignments
-    // This is the whole “give them 4 courses and 48 assignments” behavior.
-    await seedDefaultsAndAssignToUser(user);
+    // Enroll in the 4 default courses (no pre-seeded assignments)
+    await enrollUserInDefaultCourses(user);
 
     // ✅ login them immediately
     const jwtSecret = mustHaveJwtSecret();
@@ -71,7 +79,7 @@ router.post("/register", async (req, res) => {
     setAuthCookie(res, token);
 
     return res.status(201).json({
-      user: { id: user._id, name: user.name, email: user.email },
+      user: { id: user._id, name: user.name, email: user.email, role: user.role },
     });
   } catch (err) {
     console.error(err);
@@ -101,7 +109,7 @@ router.post("/login", async (req, res) => {
     const token = signToken(user._id.toString(), jwtSecret);
     setAuthCookie(res, token);
 
-    return res.json({ user: { id: user._id, name: user.name, email: user.email } });
+    return res.json({ user: { id: user._id, name: user.name, email: user.email, role: user.role } });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: "Server error" });
@@ -115,13 +123,46 @@ router.get("/me", async (req, res) => {
     const userId = readUserIdFromCookie(req, jwtSecret);
     if (!userId) return res.status(401).json({ user: null });
 
-    const user = await User.findById(userId).select("_id name email");
+    const user = await User.findById(userId).select("_id name email role bio avatarUrl emailNotifications themeColor highContrast deletionRequested");
     if (!user) return res.status(401).json({ user: null });
 
-    return res.json({ user: { id: user._id, name: user.name, email: user.email } });
+    return res.json({ user: {
+      id: user._id, name: user.name, email: user.email, role: user.role,
+      bio: user.bio || "", avatarUrl: user.avatarUrl || "",
+      emailNotifications: user.emailNotifications || false,
+      themeColor: user.themeColor || "teal",
+      highContrast: user.highContrast || false,
+      deletionRequested: user.deletionRequested || false,
+    } });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ user: null });
+  }
+});
+
+// POST /api/auth/change-password
+router.post("/change-password", async (req, res) => {
+  try {
+    const jwtSecret = mustHaveJwtSecret();
+    const userId = readUserIdFromCookie(req, jwtSecret);
+    if (!userId) return res.status(401).json({ error: "Unauthorized" });
+
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword) return res.status(400).json({ error: "Missing fields" });
+    if (newPassword.length < 8) return res.status(400).json({ error: "New password must be 8+ characters" });
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(401).json({ error: "Unauthorized" });
+
+    const ok = await bcrypt.compare(currentPassword, user.passwordHash);
+    if (!ok) return res.status(400).json({ error: "Current password is incorrect" });
+
+    user.passwordHash = await bcrypt.hash(newPassword, 12);
+    await user.save();
+    return res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: "Server error" });
   }
 });
 

@@ -32,7 +32,6 @@ export function RegisterForm() {
 
     setLoading(true)
     try {
-      // If you're calling Express on port 4000, use the full URL:
       const res = await fetch("http://localhost:4000/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -48,6 +47,8 @@ export function RegisterForm() {
       }
 
       router.push("/login")
+    } catch (err) {
+      setError("Can't reach the server. Make sure the backend is running on port 4000.")
     } finally {
       setLoading(false)
     }

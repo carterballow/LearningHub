@@ -44,13 +44,95 @@
     --sidebar-border: 220 15% 18%;
     --sidebar-ring: 173 58% 39%;
   }
-}
 
-/*@layer base {
   * {
     @apply border-border;
   }
+
   body {
     @apply bg-background text-foreground;
   }
-} */
+
+  h1, h2, h3, h4, h5, h6 {
+    letter-spacing: -0.025em;
+    line-height: 1.2;
+  }
+}
+
+.theme-blue {
+  --primary: 220 70% 50%;
+  --primary-foreground: 0 0% 100%;
+  --ring: 220 70% 50%;
+  --sidebar-primary: 220 70% 56%;
+  --sidebar-ring: 220 70% 50%;
+}
+
+.theme-purple {
+  --primary: 258 60% 54%;
+  --primary-foreground: 0 0% 100%;
+  --ring: 258 60% 54%;
+  --sidebar-primary: 258 60% 60%;
+  --sidebar-ring: 258 60% 54%;
+}
+
+.theme-rose {
+  --primary: 340 75% 52%;
+  --primary-foreground: 0 0% 100%;
+  --ring: 340 75% 52%;
+  --sidebar-primary: 340 75% 58%;
+  --sidebar-ring: 340 75% 52%;
+}
+
+.theme-green {
+  --primary: 142 55% 38%;
+  --primary-foreground: 0 0% 100%;
+  --ring: 142 55% 38%;
+  --sidebar-primary: 142 55% 44%;
+  --sidebar-ring: 142 55% 38%;
+}
+
+.theme-orange {
+  --primary: 25 90% 48%;
+  --primary-foreground: 0 0% 100%;
+  --ring: 25 90% 48%;
+  --sidebar-primary: 25 90% 54%;
+  --sidebar-ring: 25 90% 48%;
+}
+
+.dark {
+  --background: 220 25% 9%;
+  --foreground: 210 20% 92%;
+  --card: 220 22% 12%;
+  --card-foreground: 210 20% 92%;
+  --popover: 220 22% 12%;
+  --popover-foreground: 210 20% 92%;
+  --secondary: 220 18% 18%;
+  --secondary-foreground: 210 20% 85%;
+  --muted: 220 18% 18%;
+  --muted-foreground: 220 10% 55%;
+  --border: 220 15% 22%;
+  --input: 220 15% 22%;
+}
+
+.high-contrast {
+  --background: 0 0% 100%;
+  --foreground: 0 0% 0%;
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 0%;
+  --border: 0 0% 0%;
+  --input: 0 0% 0%;
+  --muted-foreground: 0 0% 20%;
+  --primary: 220 100% 35%;
+  --primary-foreground: 0 0% 100%;
+  --ring: 220 100% 35%;
+}
+
+.dark.high-contrast {
+  --background: 0 0% 0%;
+  --foreground: 0 0% 100%;
+  --card: 0 0% 5%;
+  --card-foreground: 0 0% 100%;
+  --border: 0 0% 70%;
+  --input: 0 0% 70%;
+  --muted-foreground: 0 0% 75%;
+}

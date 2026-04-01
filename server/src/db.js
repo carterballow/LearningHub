@@ -7,7 +7,7 @@ async function connectDB(uri) {
     dbName: "qwerhacks", 
   })
 
-  console.log("✅ Mongo connected:", mongoose.connection.name)
+  console.log("Mongo connected:", mongoose.connection.name)
 }
 
 module.exports = { connectDB }

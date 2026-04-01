@@ -5,7 +5,7 @@ const userAssignmentSchema = new mongoose.Schema(
     user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     course: { type: mongoose.Schema.Types.ObjectId, ref: "Course", required: true },
 
-    // points to the template in Assignments.js
+    // Points to the template in Assignments.js
     assignment: { type: mongoose.Schema.Types.ObjectId, ref: "Assignment", required: true },
 
     status: {
@@ -14,7 +14,18 @@ const userAssignmentSchema = new mongoose.Schema(
       default: "todo",
     },
 
-    score: { type: Number },
+    // Grade out of assignment.maxScore
+    grade: { type: Number },
+
+    // Teacher written feedback
+    feedback: { type: String },
+
+    // Student submission (text or notes)
+    submissionText: { type: String },
+    submittedAt: { type: Date },
+
+    // Optional PDF submitted by the student
+    submissionFileUrl: { type: String, default: "" },
   },
   { timestamps: true }
 );

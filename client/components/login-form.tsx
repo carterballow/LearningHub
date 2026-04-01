@@ -41,6 +41,8 @@ export function LoginForm() {
       }
 
       router.push("/home")
+    } catch (err) {
+      setError("Can't reach the server. Make sure the backend is running on port 4000.")
     } finally {
       setLoading(false)
     }

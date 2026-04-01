@@ -1,10 +1,20 @@
-import { DashboardLayout } from "@/components/dashboard-layout"
+import { CoursePageLayout } from "@/components/course-page-layout"
 import { CoursePageContent } from "@/components/course-page-content"
 
-export default function CoursePage({ params }: { params: { courseId: string } }) {
+export default async function CoursePage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ courseID: string }>
+  searchParams: Promise<{ tab?: string }>
+}) {
+  const { courseID } = await params
+  const sp = await searchParams
+  const tab = sp.tab ?? "overview"
+
   return (
-    <DashboardLayout title="Course">
-      <CoursePageContent courseId={params.courseId} />
-    </DashboardLayout>
+    <CoursePageLayout courseId={courseID}>
+      <CoursePageContent courseId={courseID} activeTab={tab} />
+    </CoursePageLayout>
   )
 }

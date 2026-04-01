@@ -1,64 +1,98 @@
 const Course = require("../models/Courses");
 const Assignment = require("../models/Assignments");
 const UserAssignment = require("../models/UserAssignments");
-const { DEFAULT_COURSES, buildAssignmentsForCourse } = require("./defaults");
+const { STEM_COURSES, GE_COURSES, ASSIGNMENTS_BY_COURSE } = require("./defaults");
 
-console.log("✅ LOADED seedForNewUsers from:", __filename);
-
-async function seedDefaultsAndAssignToUser(user) {
-  console.log("🌱 Seeding started for user:", user._id.toString());
-  // 1) Ensure courses exist
-  const courseDocs = [];
-  for (const c of DEFAULT_COURSES) {
-    const doc = await Course.findOneAndUpdate(
-      { code: c.code },
-      { $setOnInsert: { ...c, term: "Winter 2026" } },
-      { upsert: true, new: true }
-    );
-    courseDocs.push(doc);
-  }
-
-  // 2) Ensure each course has 12 template Assignments
-  for (const course of courseDocs) {
-    const templates = buildAssignmentsForCourse(course.code);
-
-    // Insert many, ignore duplicates (in case you run this again)
-    // We use unordered bulk so one duplicate doesn’t stop everything.
-    const ops = templates.map((t) => ({
-      updateOne: {
-        filter: { course: course._id, title: t.title },
-        update: { $setOnInsert: { course: course._id, ...t } },
-        upsert: true,
-      },
-    }));
-    await Assignment.bulkWrite(ops, { ordered: false });
-  }
-
-  // 3) Enroll user in these courses
-  user.courses = courseDocs.map((c) => c._id);
-  await user.save();
-
-  // 4) Create UserAssignments for this user from templates (48 total)
-  const allTemplates = await Assignment.find({ course: { $in: user.courses } }).select("_id course");
-
-  const uaOps = allTemplates.map((tpl) => ({
-    updateOne: {
-      filter: { user: user._id, assignment: tpl._id },
-      update: {
-        $setOnInsert: {
-          user: user._id,
-          course: tpl.course,
-          assignment: tpl._id,
-          status: "todo",
-        },
-      },
-      upsert: true,
-    },
-  }));
-
-  await UserAssignment.bulkWrite(uaOps, { ordered: false });
-
-  return { courseCount: courseDocs.length, assignmentTemplateCount: allTemplates.length };
+function pickRandom(arr, n) {
+  return [...arr].sort(() => Math.random() - 0.5).slice(0, n);
 }
 
-module.exports = { seedDefaultsAndAssignToUser };
+async function upsertCoursesAndAssignments() {
+  const allCourses = [...STEM_COURSES, ...GE_COURSES];
+  const courseDocs = {};
+
+  for (const c of allCourses) {
+    const { gradingScheme, ...rest } = c;
+    const doc = await Course.findOneAndUpdate(
+      { code: c.code },
+      {
+        $set: {
+          ...rest,
+          ...(gradingScheme ? { gradingScheme: new Map(Object.entries(gradingScheme)) } : {}),
+        },
+      },
+      { upsert: true, new: true }
+    );
+    courseDocs[c.code] = doc;
+
+    const courseAssignments = ASSIGNMENTS_BY_COURSE[c.code] || [];
+    for (const a of courseAssignments) {
+      await Assignment.findOneAndUpdate(
+        { course: doc._id, seedKey: a.seedKey },
+        {
+          $setOnInsert: {
+            course: doc._id,
+            seedKey: a.seedKey,
+            title: a.title,
+            description: a.description,
+            type: a.type,
+            dueDate: a.dueDate,
+            maxScore: a.maxScore,
+            attachmentUrl: "",
+          },
+        },
+        { upsert: true, new: true }
+      );
+    }
+  }
+
+  return courseDocs;
+}
+
+async function enrollUserInDefaultCourses(user) {
+  const courseDocs = await upsertCoursesAndAssignments();
+
+  const selectedStem = pickRandom(STEM_COURSES, 3).map((c) => c.code);
+  const selectedGe = pickRandom(GE_COURSES, 1).map((c) => c.code);
+  const selectedCodes = [...selectedStem, ...selectedGe];
+
+  user.courses = selectedCodes.map((code) => courseDocs[code]._id);
+  await user.save();
+
+  const now = new Date();
+
+  for (const code of selectedCodes) {
+    const courseDoc = courseDocs[code];
+    const assignments = await Assignment.find({ course: courseDoc._id, seedKey: { $exists: true } });
+    for (const a of assignments) {
+      const isPast = new Date(a.dueDate) < now;
+      const pct = isPast ? (85 + Math.floor(Math.random() * 14)) : 0;
+      const grade = isPast ? Math.round((pct / 100) * a.maxScore) : undefined;
+      const submittedAt = isPast
+        ? new Date(new Date(a.dueDate).getTime() - Math.floor(Math.random() * 86400000))
+        : undefined;
+
+      await UserAssignment.findOneAndUpdate(
+        { user: user._id, assignment: a._id },
+        {
+          $setOnInsert: {
+            user: user._id,
+            course: courseDoc._id,
+            assignment: a._id,
+            status: isPast ? "done" : "todo",
+            ...(isPast ? { grade, feedback: "", submissionText: ":)", submittedAt } : {}),
+          },
+        },
+        { upsert: true, new: true }
+      );
+    }
+  }
+
+  return { courseCount: selectedCodes.length };
+}
+
+async function seedDefaultsAndAssignToUser(user) {
+  return enrollUserInDefaultCourses(user);
+}
+
+module.exports = { enrollUserInDefaultCourses, seedDefaultsAndAssignToUser, upsertCoursesAndAssignments };
